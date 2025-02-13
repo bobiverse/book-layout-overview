@@ -18,4 +18,6 @@ This is a simple, fluid book-layout web application that dynamically displays a 
 4. **Remove** applied styles from the list below if needed.
 
 ## Screenshot
-See [preview.png](preview.png) for an example of how it looks in action.
+See [preview0.png](preview.png)
+---
+See [preview1.png](preview.png) for an example of how it looks in action.
