@@ -1,6 +1,6 @@
 # Book Layout overview
 
-![Preview](preview.png)
+![Preview](preview0.png)
 
 This is a simple, fluid book-layout web application that dynamically displays a specified number of pages.
 
@@ -17,7 +17,5 @@ This is a simple, fluid book-layout web application that dynamically displays a 
 3. Specify the pages to style in **Page #s** and enter the **CSS Style** (e.g., `background: red;`), then click **Apply**.
 4. **Remove** applied styles from the list below if needed.
 
-## Screenshot
-See [preview0.png](preview.png)
----
-See [preview1.png](preview.png) for an example of how it looks in action.
+
+![Preview](preview1.png)
