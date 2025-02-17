@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Book Layout - Fluid</title>
   <!-- Tailwind CSS Browser Script -->
   <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
@@ -76,11 +76,13 @@
     </div>
   </div>
 
-  <!-- List of applied styles (to remove) -->
-  <div id="stylesList" class="w-full max-w-md mb-4"></div>
+<details>
+    <summary class="mb-4">Applied styles</summary>
+    <div id="stylesList" class="w-full max-w-md mb-4"></div>
+</details>
 
-  <!-- Container for fluid pages -->
-  <div id="pagesContainer" class="flex flex-wrap gap-4 w-full justify-center"></div>
+<!-- Container for fluid pages -->
+<div id="pagesContainer" class="flex flex-wrap gap-4 w-full justify-center"></div>
 
   <script>
     // Input references
@@ -103,9 +105,11 @@
       'customStyle',
     ];
 
-    // We'll store text and styles in localStorage.
-    let pageTexts = {}; // pageTexts[pageNumber] = 'content'
-    let appliedStyles = []; // array of { id, pages: [1,2], style: 'background: red;' }
+    // We'll store page texts, tooltips, and styles in localStorage.
+    let pageTexts = {};      // pageTexts[pageNumber] = 'content'
+    let appliedStyles = [];  // array of { id, pages: [1,2], style: 'background: red;' }
+    let pageTooltips = {};   // pageTooltips[pageNumber] = 'tooltip text'
+    let tooltipPopup = null; // currently open tooltip popup
 
     // Load all settings from localStorage or use defaults
     function loadSettingsFromStorage() {
@@ -125,6 +129,11 @@
       if (savedStyles) {
         appliedStyles = JSON.parse(savedStyles);
       }
+
+      const savedTooltips = localStorage.getItem('pageTooltips');
+      if (savedTooltips) {
+        pageTooltips = JSON.parse(savedTooltips);
+      }
     }
 
     // Save input changes to localStorage
@@ -142,6 +151,11 @@
       localStorage.setItem('appliedStyles', JSON.stringify(appliedStyles));
     }
 
+    // Save entire pageTooltips object to localStorage
+    function savePageTooltips() {
+      localStorage.setItem('pageTooltips', JSON.stringify(pageTooltips));
+    }
+
     // Generate all pages in a fluid layout
     function generatePages() {
       pagesContainer.innerHTML = '';
@@ -153,7 +167,7 @@
       for (let i = 1; i <= pageCount; i++) {
         const pageEl = document.createElement('div');
         pageEl.className =
-          'rounded shadow-md flex items-center justify-center font-semibold';
+          'rounded shadow-md flex items-center justify-center font-semibold relative';
         pageEl.style.backgroundColor = 'white'; // default color
         pageEl.style.color = '#999'; // default color
         pageEl.style.width = pageWidth;
@@ -163,16 +177,45 @@
         // If we have saved text, load it
         pageEl.textContent = pageTexts[i] || i.toString();
 
-        // Save text changes on-the-fly
+        // Set native tooltip if available (fallback)
+        if (pageTooltips[i]) {
+          pageEl.title = pageTooltips[i];
+
+          // Create marker in the corner to indicate a tooltip comment.
+          const marker = document.createElement('div');
+          // "group" is needed so that child elements can use group-hover.
+          marker.className = "group absolute top-1 right-1";
+          
+          // Small circle marker.
+          const circle = document.createElement('div');
+          circle.className = "w-3 h-3 bg-blue-500 rounded-full cursor-pointer";
+          marker.appendChild(circle);
+          
+          // Tailwind-styled tooltip. Initially invisible; shows on hover.
+          const tooltip = document.createElement('div');
+          tooltip.className = "invisible group-hover:visible opacity-0 group-hover:opacity-100 transition-opacity duration-200 absolute right-0 mt-1 px-2 py-1 bg-gray-800 text-white text-xs rounded z-10 whitespace-nowrap";
+          tooltip.textContent = pageTooltips[i];
+          marker.appendChild(tooltip);
+          
+          pageEl.appendChild(marker);
+        }
+
+        // Save text changes on-the-fly.
         pageEl.addEventListener('input', () => {
           pageTexts[i] = pageEl.textContent;
           savePageTexts();
         });
 
+        // Add right-click context menu for tooltip editing.
+        pageEl.addEventListener('contextmenu', (e) => {
+          e.preventDefault();
+          showTooltipPopup(pageEl, i, e.clientX, e.clientY);
+        });
+
         pagesContainer.appendChild(pageEl);
       }
 
-      // Re-apply styles
+      // Re-apply styles.
       applyAllStyles();
     }
 
@@ -181,12 +224,13 @@
       styleObj.pages.forEach((p) => {
         const pageEl = pagesContainer.querySelector(`[data-page-number='${p}']`);
         if (pageEl) {
+          // Append the new style to existing styles.
           pageEl.style.cssText += styleObj.style;
         }
       });
     }
 
-    // Re-apply all styles from the appliedStyles array
+    // Re-apply all styles from the appliedStyles array.
     function applyAllStyles() {
       appliedStyles.forEach((styleObj) => {
         applyStyleObject(styleObj);
@@ -194,7 +238,7 @@
       renderStylesList();
     }
 
-    // Apply new style from user input
+    // Apply new style from user input.
     function applyUserStyle() {
       const styleStr = customStyleInput.value.trim();
       if (!styleStr) return;
@@ -217,51 +261,187 @@
       renderStylesList();
     }
 
-    // Remove a previously applied style
+    // Remove a previously applied style.
     function removeStyle(styleId) {
       appliedStyles = appliedStyles.filter((s) => s.id !== styleId);
       saveAppliedStyles();
-      generatePages(); // regenerates pages and reapplies styles
+      generatePages(); // regenerates pages and reapplies styles.
     }
 
-    // Render list of currently applied styles
+    // Render list of currently applied styles with edit functionality and preview square.
     function renderStylesList() {
       stylesList.innerHTML = '';
 
       appliedStyles.forEach((styleObj) => {
         const row = document.createElement('div');
-        row.className = 'flex flex-row items-center justify-between mb-2 border-b border-gray-300 pb-2';
+        row.className =
+          'flex flex-row items-center justify-between mb-2 border-b border-gray-300 pb-2';
 
+        // Create preview square with applied style.
+        const previewSquare = document.createElement('div');
+        previewSquare.className = 'p-3 mr-2';
+        previewSquare.style.cssText = styleObj.style;
+        // previewSquare.style.width = '1em';
+        // previewSquare.style.height = '1em';
+        previewSquare.style.border = '1px dashed #999';
+
+        // Create a span to show the current pages and style.
         const label = document.createElement('span');
         label.textContent = `Pages: [${styleObj.pages.join(', ')}], Style: "${styleObj.style}"`;
         label.className = 'text-sm';
 
+        // Create Remove button.
         const removeBtn = document.createElement('button');
         removeBtn.textContent = 'Remove';
         removeBtn.className = 'text-red-600 hover:text-red-800 ml-4';
         removeBtn.addEventListener('click', () => removeStyle(styleObj.id));
 
+        // Create Edit button.
+        const editBtn = document.createElement('button');
+        editBtn.textContent = 'Edit';
+        editBtn.className = 'text-blue-600 hover:text-blue-800 ml-4';
+        editBtn.addEventListener('click', () => {
+          // Replace the label with input fields for pages and style.
+          const pagesInputField = document.createElement('input');
+          pagesInputField.type = 'text';
+          pagesInputField.value = styleObj.pages.join(', ');
+          pagesInputField.className =
+            'border border-gray-300 rounded p-1 w-24';
+
+          const styleInputField = document.createElement('input');
+          styleInputField.type = 'text';
+          styleInputField.value = styleObj.style;
+          styleInputField.className =
+            'border border-gray-300 rounded p-1 w-40 ml-2';
+
+          // Create Save and Cancel buttons for the inline edit.
+          const saveBtn = document.createElement('button');
+          saveBtn.textContent = 'Save';
+          saveBtn.className = 'text-green-600 hover:text-green-800 ml-4';
+
+          const cancelBtn = document.createElement('button');
+          cancelBtn.textContent = 'Cancel';
+          cancelBtn.className = 'text-gray-600 hover:text-gray-800 ml-2';
+
+          // Hide the original label and edit button.
+          row.replaceChild(pagesInputField, label);
+          row.insertBefore(styleInputField, removeBtn);
+          row.insertBefore(saveBtn, removeBtn);
+          row.insertBefore(cancelBtn, removeBtn);
+          // Hide the edit button while editing.
+          editBtn.style.display = 'none';
+
+          // On Save, update the style object and reapply styles.
+          saveBtn.addEventListener('click', () => {
+            const newPages = pagesInputField.value
+              .split(',')
+              .map((x) => x.trim())
+              .filter((x) => x !== '');
+            const newStyle = styleInputField.value.trim();
+            if (newPages.length && newStyle) {
+              styleObj.pages = newPages;
+              styleObj.style = newStyle;
+              saveAppliedStyles();
+              generatePages();
+            }
+          });
+
+          // On Cancel, re-render the styles list to cancel editing.
+          cancelBtn.addEventListener('click', () => {
+            renderStylesList();
+          });
+        });
+
+        row.appendChild(previewSquare);
         row.appendChild(label);
+        row.appendChild(editBtn);
         row.appendChild(removeBtn);
         stylesList.appendChild(row);
       });
     }
 
-    // Initialization on DOM load
+    // Show tooltip popup on right-click on a page cell.
+    function showTooltipPopup(pageEl, pageNumber, x, y) {
+      // Remove existing popup if any.
+      if (tooltipPopup) {
+        tooltipPopup.remove();
+      }
+
+      tooltipPopup = document.createElement('div');
+      tooltipPopup.className = 'absolute bg-white border border-gray-300 p-2 rounded shadow-lg';
+      tooltipPopup.style.left = x + 'px';
+      tooltipPopup.style.top = y + 'px';
+      tooltipPopup.style.zIndex = 1000;
+
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.placeholder = 'Enter tooltip text';
+      input.className = 'border border-gray-300 rounded p-1 mr-2';
+      if (pageTooltips[pageNumber]) {
+        input.value = pageTooltips[pageNumber];
+      }
+
+      const saveBtn = document.createElement('button');
+      saveBtn.textContent = 'Save';
+      saveBtn.className = 'bg-green-600 text-white px-2 py-1 rounded mr-2';
+      saveBtn.addEventListener('click', () => {
+        const tooltipText = input.value.trim();
+        pageTooltips[pageNumber] = tooltipText;
+        // Also update the native title (for fallback).
+        pageEl.title = tooltipText;
+        savePageTooltips();
+        if (tooltipPopup) {
+          tooltipPopup.remove();
+          tooltipPopup = null;
+        }
+        // Regenerate pages to show or update the marker.
+        generatePages();
+      });
+
+      const cancelBtn = document.createElement('button');
+      cancelBtn.textContent = 'Cancel';
+      cancelBtn.className = 'bg-red-600 text-white px-2 py-1 rounded';
+      cancelBtn.addEventListener('click', () => {
+        if (tooltipPopup) {
+          tooltipPopup.remove();
+          tooltipPopup = null;
+        }
+      });
+
+      tooltipPopup.appendChild(input);
+      tooltipPopup.appendChild(saveBtn);
+      tooltipPopup.appendChild(cancelBtn);
+      document.body.appendChild(tooltipPopup);
+
+      // Close popup if clicking outside.
+      setTimeout(() => {
+        document.addEventListener('click', onClickOutside);
+      }, 0);
+
+      function onClickOutside(e) {
+        if (tooltipPopup && !tooltipPopup.contains(e.target)) {
+          tooltipPopup.remove();
+          tooltipPopup = null;
+          document.removeEventListener('click', onClickOutside);
+        }
+      }
+    }
+
+    // Initialization on DOM load.
     document.addEventListener('DOMContentLoaded', () => {
-      // Load from localStorage
+      // Load from localStorage.
       loadSettingsFromStorage();
 
-      // Add input listeners to store new values in localStorage
+      // Add input listeners to store new values in localStorage.
       inputIds.forEach((id) => {
         document.getElementById(id).addEventListener('input', saveSetting);
       });
 
-      // Generate pages
+      // Generate pages.
       generatePages();
     });
 
-    // Button listeners
+    // Button listeners.
     generateBtn.addEventListener('click', generatePages);
     applyStyleBtn.addEventListener('click', applyUserStyle);
   </script>
