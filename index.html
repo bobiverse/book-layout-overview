@@ -2,57 +2,96 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Enhanced Book Layout (Dropdown Import/Export)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Book Layout with Layout Dropdown</title>
   <!-- Tailwind CSS Browser Script -->
   <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-  <!-- We'll use Heroicons for import/export icons: https://heroicons.com -->
+  <!-- Heroicons for icons: https://heroicons.com -->
+  <style>
+    /* ===== LAYOUT: GRID BY TWO ===== */
+    .layout-grid-2 {
+      display: grid;
+      grid-template-columns: repeat(2, max-content);
+      gap: 1rem; /* Space between pairs/openings */
+      justify-content: center;
+    }
+    /* First page = cover, spans both columns */
+    .layout-grid-2 > div:nth-child(1) {
+      grid-column: 1 / -1;
+      justify-self: center;
+    }
+
+    /* ===== LAYOUT: FLEX PAIRS ===== */
+    .layout-flex-pairs {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 2rem; /* bigger gap between different pairs */
+    }
+    .layout-flex-pairs > div {
+      /* Each page is a "card" in flex mode */
+    }
+    /* "Pull" odd pages (3,5,7,...) closer to the preceding page (2,4,6,...) */
+    .layout-flex-pairs > div:nth-child(odd):not(:first-child) {
+      margin-left: -1.6rem; /* negative margin to snug pairs */
+    }
+  </style>
 </head>
 <body class="relative min-h-screen bg-gray-200 p-4 flex flex-col items-center justify-start">
 
-  <!-- Dropdown in the top-right corner for Export/Import -->
-  <div class="absolute top-4 right-4" id="exportImportDropdownContainer">
+  <!-- Original Menu dropdown (for Import/Export only) -->
+  <div class="absolute top-4 right-4 flex items-center space-x-2" id="menusContainer">
+    <!-- Main MENU for Import/Export -->
     <div class="relative inline-block text-left">
       <button
         id="dropdownToggleBtn"
         class="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-700 hover:bg-gray-100 focus:outline-none"
       >
         <!-- Heroicon: bars-3 -->
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5"
+             fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round"
+                d="M4 6h16M4 12h16M4 18h16" />
         </svg>
         <span class="ml-2">Menu</span>
       </button>
-
       <!-- Dropdown Menu -->
       <div
         id="dropdownMenu"
-        class="origin-top-right absolute right-0 mt-2 w-44 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 hidden"
+        class="origin-top-right absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 hidden"
       >
         <div class="py-1">
+          <!-- Export -->
           <button
             id="exportBtn"
             class="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
           >
             <!-- Heroicon: arrow-down-tray (export) -->
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5V18a2.006 2.006 0 0 0 2 2h14a2.006 2.006 0 0 0 2-2v-1.5m-4-2.5-4 4m0 0-4-4m4 4V3"/>
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4"
+                 fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                    d="M3 16.5V18a2.006 2.006 0 0 0 2 2h14a2.006 2.006 0 0 0 2-2v-1.5m-4-2.5-4 4m0 0-4-4m4 4V3"/>
             </svg>
             <span class="ml-2">Export JSON</span>
           </button>
+
+          <!-- Import -->
           <button
             id="importFileBtn"
             class="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
           >
             <!-- Heroicon: arrow-up-tray (import) -->
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M3 10v1.5a2 2 0 002 2h3m4 4 4-4m0 0-4-4m4 4H10m10 4.5V18a2 2 0 01-2 2h-5" />
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4"
+                 fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                    d="M3 10v1.5a2 2 0 002 2h3m4 4 4-4m0 0-4-4m4 4H10m10 4.5V18a2 2 0 01-2 2h-5" />
             </svg>
             <span class="ml-2">Import File</span>
           </button>
         </div>
       </div>
     </div>
+
     <!-- Hidden file input for import -->
     <input
       type="file"
@@ -60,6 +99,135 @@
       accept="application/json"
       class="hidden"
     />
+
+    <!-- 1) Dropdown for TOTAL RESET -->
+    <div class="relative inline-block text-left">
+      <button
+        id="resetAllToggleBtn"
+        class="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-700 hover:bg-gray-100 focus:outline-none"
+      >
+        <!-- Heroicon: exclamation-triangle -->
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5"
+             fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round"
+                d="M11.049 2.927c.3-.531.81-.927 1.401-.927s1.101.396 1.401.927l7.858 13.896A1.5 1.5 0 0 1 20.858 18H3.142a1.5 1.5 0 0 1-1.351-2.177l7.858-13.896zM12 9v4m0 4h.01" />
+        </svg>
+        <span class="ml-2">Reset All</span>
+      </button>
+      <div
+        id="resetAllMenu"
+        class="origin-top-right absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 hidden"
+      >
+        <div class="py-1">
+          <button
+            id="totalResetBtn"
+            class="block w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left"
+          >
+            Confirm Total Reset
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2) Dropdown for REMOVING ALL CSS STYLES -->
+    <div class="relative inline-block text-left">
+      <button
+        id="removeStylesToggleBtn"
+        class="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-700 hover:bg-gray-100 focus:outline-none"
+      >
+        <!-- Heroicon: scissors -->
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5"
+             fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round"
+                d="M14.121 14.121a3 3 0 1 0 4.242 4.243M16 8l-6 6m0 0-3 3m3-3l3 3"/>
+        </svg>
+        <span class="ml-2">Clear CSS</span>
+      </button>
+      <div
+        id="removeStylesMenu"
+        class="origin-top-right absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 hidden"
+      >
+        <div class="py-1">
+          <button
+            id="removeStylesBtn"
+            class="block w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left"
+          >
+            Confirm Remove Styles
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3) Dropdown for REMOVING ALL PAGE TEXT -->
+    <div class="relative inline-block text-left">
+      <button
+        id="removeTextToggleBtn"
+        class="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-700 hover:bg-gray-100 focus:outline-none"
+      >
+        <!-- Heroicon: document-x -->
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5"
+             fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round"
+                d="M9.75 9.75l4.5 4.5m0-4.5-4.5 4.5m.75-8.25h-2a2.25 2.25 0 0 0-2.25 2.25v10.5A2.25 2.25 0 0 0 8.25 21h7.5A2.25 2.25 0 0 0 18 18.75v-7.5L15.75 6H12" />
+        </svg>
+        <span class="ml-2">Clear Text</span>
+      </button>
+      <div
+        id="removeTextMenu"
+        class="origin-top-right absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 hidden"
+      >
+        <div class="py-1">
+          <button
+            id="removeTextBtn"
+            class="block w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left"
+          >
+            Confirm Remove Text
+          </button>
+        </div>
+      </div>
+    </div>
+
+        <!-- NEW LAYOUT DROPDOWN -->
+        <div class="relative inline-block text-left">
+            <button
+              id="layoutToggleBtn"
+              class="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-700 hover:bg-gray-100 focus:outline-none"
+            >
+              <!-- Heroicon: squares-2x2, for example -->
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5"
+                   fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                      d="M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z" />
+              </svg>
+              <span class="ml-2">Layout</span>
+            </button>
+            <div
+              id="layoutDropdown"
+              class="origin-top-right absolute right-0 mt-2 w-40 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 hidden"
+            >
+              <div class="py-1">
+                <button
+                  id="gridLayoutBtn"
+                  class="block w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left"
+                >
+                  Pairs (new lines)
+                </button>
+                <button
+                  id="flexPairsBtn"
+                  class="block w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left"
+                >
+                  Pairs
+                </button>
+                <button
+                  id="noneLayoutBtn"
+                  class="block w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left"
+                >
+                  No Style (default)
+                </button>
+              </div>
+            </div>
+          </div>
+
   </div>
 
   <!-- Number of pages + generate -->
@@ -176,19 +344,37 @@
     const pagesContainer = document.getElementById('pagesContainer');
     const stylesList = document.getElementById('stylesList');
 
+    // The references for the new layout dropdown
+    const layoutToggleBtn = document.getElementById('layoutToggleBtn');
+    const layoutDropdown = document.getElementById('layoutDropdown');
+    const gridLayoutBtn = document.getElementById('gridLayoutBtn');
+    const flexPairsBtn = document.getElementById('flexPairsBtn');
+    const noneLayoutBtn = document.getElementById('noneLayoutBtn');
+
     // Insert references
     const insertAfterInput = document.getElementById('insertAfter');
     const insertCountInput = document.getElementById('insertCount');
     const insertPagesBtn = document.getElementById('insertPagesBtn');
 
-    // Export / Import references
+    // Export/Import references
     const exportBtn = document.getElementById('exportBtn');
     const fileInput = document.getElementById('fileInput');
     const importFileBtn = document.getElementById('importFileBtn');
 
-    // Dropdown references
+    // Reset button references
+    const totalResetBtn = document.getElementById('totalResetBtn');
+    const removeStylesBtn = document.getElementById('removeStylesBtn');
+    const removeTextBtn = document.getElementById('removeTextBtn');
+
+    // Dropdown toggles
     const dropdownToggleBtn = document.getElementById('dropdownToggleBtn');
     const dropdownMenu = document.getElementById('dropdownMenu');
+    const resetAllToggleBtn = document.getElementById('resetAllToggleBtn');
+    const resetAllMenu = document.getElementById('resetAllMenu');
+    const removeStylesToggleBtn = document.getElementById('removeStylesToggleBtn');
+    const removeStylesMenu = document.getElementById('removeStylesMenu');
+    const removeTextToggleBtn = document.getElementById('removeTextToggleBtn');
+    const removeTextMenu = document.getElementById('removeTextMenu');
 
     // All input IDs for quick localStorage management
     const inputIds = [
@@ -204,6 +390,48 @@
     let appliedStyles = [];  // array of { id, pages: [1,2], style: 'background: red;' }
     let pageTooltips = {};   // pageTooltips[pageNumber] = 'tooltip text'
     let tooltipPopup = null; // currently open tooltip popup
+
+
+    // A helper to apply a chosen layout class to #pagesContainer
+    function applyLayoutMode(mode) {
+      const container = document.getElementById('pagesContainer');
+      // Clear all layout classes
+      container.classList.remove('layout-grid-2', 'layout-flex-pairs', 'layout-none');
+      // Add whichever user selected
+      if (mode === 'grid') {
+        container.classList.add('layout-grid-2');
+      } else if (mode === 'flex') {
+        container.classList.add('layout-flex-pairs');
+      } else {
+        // No style
+        container.classList.add('layout-none');
+      }
+    }
+
+    // Toggle the layout dropdown
+    layoutToggleBtn.addEventListener('click', () => {
+      layoutDropdown.classList.toggle('hidden');
+    });
+    // Close if clicking outside
+    document.addEventListener('click', (e) => {
+      if (!layoutToggleBtn.contains(e.target) && !layoutDropdown.contains(e.target)) {
+        layoutDropdown.classList.add('hidden');
+      }
+    });
+
+    // Hook up each layout button
+    gridLayoutBtn.addEventListener('click', () => {
+      applyLayoutMode('grid');
+      layoutDropdown.classList.add('hidden');
+    });
+    flexPairsBtn.addEventListener('click', () => {
+      applyLayoutMode('flex');
+      layoutDropdown.classList.add('hidden');
+    });
+    noneLayoutBtn.addEventListener('click', () => {
+      applyLayoutMode('none');
+      layoutDropdown.classList.add('hidden');
+    });
 
     // Load all settings from localStorage or use defaults
     function loadSettingsFromStorage() {
@@ -254,7 +482,14 @@
     function generatePages() {
       pagesContainer.innerHTML = '';
 
-      const pageCount = parseInt(pageInput.value, 10) || 0;
+      let pageCount = parseInt(pageInput.value, 10) || 0;
+      // If no pages are set, default to 23 on first load
+      if (pageCount < 1) {
+        pageCount = 23;
+        pageInput.value = 23;
+        localStorage.setItem('pageInput', '23');
+      }
+
       const pageWidth = pageWidthInput.value + 'px';
       const pageHeight = pageHeightInput.value + 'px';
 
@@ -262,31 +497,33 @@
         const pageEl = document.createElement('div');
         pageEl.className =
           'rounded shadow-md flex items-center justify-center font-semibold relative';
-        pageEl.style.backgroundColor = 'white'; // default color
-        pageEl.style.color = '#999'; // default color
+        pageEl.style.backgroundColor = 'white';
+        pageEl.style.color = '#999';
         pageEl.style.width = pageWidth;
         pageEl.style.height = pageHeight;
         pageEl.dataset.pageNumber = i;
         pageEl.contentEditable = true;
-        // If we have saved text, load it
+
+        // Load any saved text
         pageEl.textContent = pageTexts[i] || i.toString();
 
         // Set native tooltip if available (fallback)
         if (pageTooltips[i]) {
           pageEl.title = pageTooltips[i];
 
-          // Create marker in the corner to indicate a tooltip comment.
+          // Create marker in the corner to indicate a tooltip comment
           const marker = document.createElement('div');
           marker.className = "group absolute top-1 right-1";
 
-          // Small circle marker.
+          // Small circle marker
           const circle = document.createElement('div');
-          circle.className = "w-3 h-3 bg-blue-500 rounded-full cursor-pointer";
+          circle.className = "w-2 h-2 bg-blue-100 rounded-full cursor-pointer";
           marker.appendChild(circle);
 
-          // Tailwind-styled tooltip. Initially invisible; shows on hover.
+          // Tailwind-styled tooltip
           const tooltip = document.createElement('div');
-          tooltip.className = "invisible group-hover:visible opacity-0 group-hover:opacity-100 transition-opacity duration-200 absolute right-0 mt-1 px-2 py-1 bg-gray-800 text-white text-xs rounded z-10 whitespace-nowrap";
+          tooltip.className =
+            "invisible group-hover:visible opacity-0 group-hover:opacity-100 transition-opacity duration-200 absolute right-0 mt-1 px-2 py-1 bg-gray-800 text-white text-xs rounded z-10 whitespace-nowrap";
           tooltip.textContent = pageTooltips[i];
           marker.appendChild(tooltip);
 
@@ -317,7 +554,7 @@
       styleObj.pages.forEach((p) => {
         const pageEl = pagesContainer.querySelector(`[data-page-number='${p}']`);
         if (pageEl) {
-          // Append the new style to existing styles.
+          // Append the new style
           pageEl.style.cssText += styleObj.style;
         }
       });
@@ -358,7 +595,7 @@
     function removeStyle(styleId) {
       appliedStyles = appliedStyles.filter((s) => s.id !== styleId);
       saveAppliedStyles();
-      generatePages(); // regenerates pages and reapplies styles.
+      generatePages(); // regenerates pages + reapplies styles
     }
 
     // Render list of currently applied styles with edit functionality.
@@ -376,36 +613,34 @@
         previewSquare.style.cssText = styleObj.style;
         previewSquare.style.border = '1px dashed #999';
 
-        // Create a span to show the current pages and style.
+        // Show pages & style
         const label = document.createElement('span');
         label.textContent = `Pages: [${styleObj.pages.join(', ')}], Style: "${styleObj.style}"`;
         label.className = 'text-sm';
 
-        // Create Remove button.
+        // Remove button
         const removeBtn = document.createElement('button');
         removeBtn.textContent = 'Remove';
         removeBtn.className = 'text-red-600 hover:text-red-800 ml-4';
         removeBtn.addEventListener('click', () => removeStyle(styleObj.id));
 
-        // Create Edit button.
+        // Edit button
         const editBtn = document.createElement('button');
         editBtn.textContent = 'Edit';
         editBtn.className = 'text-blue-600 hover:text-blue-800 ml-4';
         editBtn.addEventListener('click', () => {
-          // Replace the label with input fields for pages and style.
+          // Replace label with input fields for pages & style
           const pagesInputField = document.createElement('input');
           pagesInputField.type = 'text';
           pagesInputField.value = styleObj.pages.join(', ');
-          pagesInputField.className =
-            'border border-gray-300 rounded p-1 w-24';
+          pagesInputField.className = 'border border-gray-300 rounded p-1 w-24';
 
           const styleInputField = document.createElement('input');
           styleInputField.type = 'text';
           styleInputField.value = styleObj.style;
-          styleInputField.className =
-            'border border-gray-300 rounded p-1 w-40 ml-2';
+          styleInputField.className = 'border border-gray-300 rounded p-1 w-40 ml-2';
 
-          // Create Save and Cancel buttons for the inline edit.
+          // Save / Cancel
           const saveBtn = document.createElement('button');
           saveBtn.textContent = 'Save';
           saveBtn.className = 'text-green-600 hover:text-green-800 ml-4';
@@ -414,19 +649,17 @@
           cancelBtn.textContent = 'Cancel';
           cancelBtn.className = 'text-gray-600 hover:text-gray-800 ml-2';
 
-          // Hide the original label and edit button.
           row.replaceChild(pagesInputField, label);
           row.insertBefore(styleInputField, removeBtn);
           row.insertBefore(saveBtn, removeBtn);
           row.insertBefore(cancelBtn, removeBtn);
           editBtn.style.display = 'none';
 
-          // On Save, update the style object and reapply styles.
           saveBtn.addEventListener('click', () => {
             const newPages = pagesInputField.value
               .split(',')
               .map((x) => x.trim())
-              .filter((x) => x !== '');
+              .filter((x) => x);
             const newStyle = styleInputField.value.trim();
             if (newPages.length && newStyle) {
               styleObj.pages = newPages;
@@ -435,8 +668,6 @@
               generatePages();
             }
           });
-
-          // On Cancel, re-render the styles list to cancel editing.
           cancelBtn.addEventListener('click', () => {
             renderStylesList();
           });
@@ -450,9 +681,9 @@
       });
     }
 
-    // Show a context menu (tooltip + delete page) on right-click on a page.
+    // Right-click menu for tooltip & delete page
     function showContextMenu(pageEl, pageNumber, x, y) {
-      // Remove existing popup if any.
+      // Remove existing popup if any
       if (tooltipPopup) {
         tooltipPopup.remove();
       }
@@ -479,11 +710,9 @@
       saveBtn.addEventListener('click', () => {
         const tooltipText = input.value.trim();
         pageTooltips[pageNumber] = tooltipText;
-        // Also update the native title (for fallback).
-        pageEl.title = tooltipText;
+        pageEl.title = tooltipText; // fallback
         savePageTooltips();
         closeContextMenu();
-        // Regenerate pages to show or update the marker.
         generatePages();
       });
 
@@ -500,9 +729,7 @@
       const cancelBtn = document.createElement('button');
       cancelBtn.textContent = 'Cancel';
       cancelBtn.className = 'border border-gray-300 bg-white text-gray-700 px-2 py-1 rounded mb-2 hover:bg-gray-100';
-      cancelBtn.addEventListener('click', () => {
-        closeContextMenu();
-      });
+      cancelBtn.addEventListener('click', closeContextMenu);
 
       tooltipPopup.appendChild(input);
       tooltipPopup.appendChild(saveBtn);
@@ -520,7 +747,6 @@
           closeContextMenu();
         }
       }
-
       function closeContextMenu() {
         if (tooltipPopup) {
           tooltipPopup.remove();
@@ -530,21 +756,20 @@
       }
     }
 
-    // Delete a page from the layout.
+    // Delete a page from the layout
     function deletePage(pageNumber) {
       const currentCount = parseInt(pageInput.value, 10) || 0;
       if (currentCount <= 1) {
-        // If there's only one page left, let's just clear it.
+        // If there's only one page, we clear it
         pageInput.value = 0;
         pageTexts = {};
         pageTooltips = {};
-        localStorage.setItem('pageTexts', JSON.stringify(pageTexts));
-        localStorage.setItem('pageTooltips', JSON.stringify(pageTooltips));
+        savePageTexts();
+        savePageTooltips();
         generatePages();
         return;
       }
-
-      // Deleting page i means shifting pages i+1..N => i..(N-1)
+      // Shift pages i+1..N => i..(N-1)
       for (let i = pageNumber; i < currentCount; i++) {
         pageTexts[i] = pageTexts[i + 1] || '';
         pageTooltips[i] = pageTooltips[i + 1] || '';
@@ -552,12 +777,12 @@
       delete pageTexts[currentCount];
       delete pageTooltips[currentCount];
 
-      // Adjust styles that reference pages above pageNumber
+      // Adjust styles referencing pages > pageNumber
       appliedStyles.forEach((sObj) => {
         sObj.pages = sObj.pages.reduce((arr, p) => {
           const numP = parseInt(p, 10);
           if (numP === pageNumber) {
-            // omit the page we removed
+            // skip
           } else if (numP > pageNumber) {
             arr.push((numP - 1).toString());
           } else {
@@ -574,11 +799,10 @@
       savePageTexts();
       savePageTooltips();
       saveAppliedStyles();
-      // Regenerate
       generatePages();
     }
 
-    // Insert pages after a specific page.
+    // Insert pages after a specific page
     function insertPages() {
       const after = parseInt(insertAfterInput.value, 10);
       const count = parseInt(insertCountInput.value, 10);
@@ -586,7 +810,7 @@
       if (count < 1) return;
       if (after < 1 || after > currentCount) return;
 
-      // Example: Insert X pages after Y. Then page Y+1..N => Y+X+1..N+X
+      // Move old pages up
       for (let i = currentCount; i > after; i--) {
         pageTexts[i + count] = pageTexts[i] || '';
         pageTooltips[i + count] = pageTooltips[i] || '';
@@ -594,22 +818,18 @@
         delete pageTooltips[i];
       }
 
-      // Clear the newly inserted pages (Y+1..Y+X)
+      // Clear the newly inserted pages
       for (let i = 1; i <= count; i++) {
-        const newPageIndex = after + i;
-        pageTexts[newPageIndex] = '';
-        pageTooltips[newPageIndex] = '';
+        const newIndex = after + i;
+        pageTexts[newIndex] = '';
+        pageTooltips[newIndex] = '';
       }
 
-      // Adjust styles that reference pages above 'after'
+      // Adjust styles referencing pages > after
       appliedStyles.forEach((sObj) => {
         sObj.pages = sObj.pages.map((p) => {
           const numP = parseInt(p, 10);
-          if (numP > after) {
-            return (numP + count).toString();
-          } else {
-            return p;
-          }
+          return (numP > after) ? (numP + count).toString() : p;
         });
       });
 
@@ -621,19 +841,17 @@
       savePageTooltips();
       saveAppliedStyles();
 
-      // Regenerate
       generatePages();
     }
 
-    // Export all data as JSON and download it.
+    // Export all data as JSON and download it
     function exportData() {
       const data = {
         pageCount: pageInput.value,
-        pageTexts: pageTexts,
-        appliedStyles: appliedStyles,
-        pageTooltips: pageTooltips,
+        pageTexts,
+        appliedStyles,
+        pageTooltips,
       };
-
       const jsonString = JSON.stringify(data, null, 2);
       const blob = new Blob([jsonString], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
@@ -642,26 +860,24 @@
       a.style.display = 'none';
       a.href = url;
       a.download = 'bookLayout.json';
-
       document.body.appendChild(a);
       a.click();
 
-      // Cleanup
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
     }
 
-    // Import from JSON file.
-    function onFileSelected(event) {
-      const file = event.target.files[0];
+    // Import from JSON file
+    function onFileSelected(e) {
+      const file = e.target.files[0];
       if (!file) return;
 
       const reader = new FileReader();
-      reader.onload = (e) => {
+      reader.onload = (evt) => {
         try {
-          const raw = e.target.result;
+          const raw = evt.target.result;
           const parsed = JSON.parse(raw);
-          // Overwrite local data.
+          // Overwrite local data
           if (typeof parsed.pageCount !== 'undefined') {
             pageInput.value = parsed.pageCount;
           }
@@ -674,16 +890,14 @@
           if (parsed.pageTooltips) {
             pageTooltips = parsed.pageTooltips;
           }
-
-          // Save everything.
+          // Save everything
           inputIds.forEach((id) => {
             localStorage.setItem(id, document.getElementById(id).value);
           });
           savePageTexts();
           savePageTooltips();
           saveAppliedStyles();
-
-          // Re-generate.
+          // Re-generate
           generatePages();
         } catch (err) {
           alert('Invalid JSON data in the selected file!');
@@ -692,38 +906,92 @@
       reader.readAsText(file);
     }
 
-    // Toggle the dropdown menu
-    dropdownToggleBtn.addEventListener('click', () => {
-      dropdownMenu.classList.toggle('hidden');
-    });
+    // Handle toggles for each dropdown
+    function setupDropdown(toggleBtn, dropdownEl) {
+      toggleBtn.addEventListener('click', () => {
+        dropdownEl.classList.toggle('hidden');
+      });
+      // Close if clicked outside
+      document.addEventListener('click', (e) => {
+        if (!toggleBtn.contains(e.target) && !dropdownEl.contains(e.target)) {
+          dropdownEl.classList.add('hidden');
+        }
+      });
+    }
 
-    // Close the dropdown if clicked outside
-    document.addEventListener('click', (e) => {
-      if (!document.getElementById('exportImportDropdownContainer').contains(e.target)) {
-        dropdownMenu.classList.add('hidden');
-      }
-    });
-
-    // Initialization on DOM load.
+    // -- DOM Loaded --
     document.addEventListener('DOMContentLoaded', () => {
-      // Load from localStorage.
+      // 1) Load from localStorage
       loadSettingsFromStorage();
 
-      // Add input listeners to store new values in localStorage.
+      // 2) Setup watchers
       inputIds.forEach((id) => {
         document.getElementById(id).addEventListener('input', saveSetting);
       });
 
-      // Generate pages initially.
+      // 3) Initialize pages
       generatePages();
 
-      // Button listeners.
+      // 4) Button listeners
       generateBtn.addEventListener('click', generatePages);
       applyStyleBtn.addEventListener('click', applyUserStyle);
       insertPagesBtn.addEventListener('click', insertPages);
       exportBtn.addEventListener('click', exportData);
       importFileBtn.addEventListener('click', () => fileInput.click());
       fileInput.addEventListener('change', onFileSelected);
+
+      // 5) Setup the reset actions
+      totalResetBtn.addEventListener('click', () => {
+        if (!confirm('This will clear ALL data (pages, styles, text, tooltips). Proceed?')) return;
+        // Clear relevant localStorage keys
+        inputIds.forEach((id) => localStorage.removeItem(id));
+        localStorage.removeItem('pageTexts');
+        localStorage.removeItem('pageTooltips');
+        localStorage.removeItem('appliedStyles');
+        // Clear in-memory data
+        pageTexts = {};
+        appliedStyles = [];
+        pageTooltips = {};
+        // Reset page count to 0 => becomes 23 after generate
+        pageInput.value = 0;
+        generatePages();
+        resetAllMenu.classList.add('hidden');
+      });
+      removeStylesBtn.addEventListener('click', () => {
+        if (!confirm('Remove all applied CSS styles?')) return;
+        localStorage.removeItem('appliedStyles');
+        appliedStyles = [];
+        generatePages();
+        removeStylesMenu.classList.add('hidden');
+      });
+      removeTextBtn.addEventListener('click', () => {
+        if (!confirm('Remove all custom text from pages (keeping tooltips)?')) return;
+        Object.keys(pageTexts).forEach((k) => {
+          pageTexts[k] = '';
+        });
+        savePageTexts();
+        generatePages();
+        removeTextMenu.classList.add('hidden');
+      });
+
+      // 6) Setup each dropdown’s toggle
+      //    (Main Menu)
+      dropdownToggleBtn.addEventListener('click', () => {
+        dropdownMenu.classList.toggle('hidden');
+      });
+      document.addEventListener('click', (e) => {
+        const container = document.getElementById('menusContainer');
+        if (!container.contains(e.target)) {
+          dropdownMenu.classList.add('hidden');
+        }
+      });
+
+      //   (Reset All)
+      setupDropdown(resetAllToggleBtn, resetAllMenu);
+      //   (Remove Styles)
+      setupDropdown(removeStylesToggleBtn, removeStylesMenu);
+      //   (Remove Text)
+      setupDropdown(removeTextToggleBtn, removeTextMenu);
     });
   </script>
 </body>
