@@ -941,7 +941,7 @@
               line = `<div style="padding:0.1em 0;border-bottom:1px solid #aaa;background:#efefef;"><b>${i}.lpp.</b> <strong>"${text}"</strong>`;
             } else {
               // Show underscores instead of empty quotes
-              line = `<div style="color:#999;border-bottom:1px solid #aaa;">${i}.lpp.`;
+              line = `<div style="color:#999;border-bottom:1px dashed #aaa;">${i}.lpp.`;
             }
             if (comment) {
             line += ` <em>(${comment})</em>`;
@@ -960,7 +960,7 @@
         <meta charset="utf-8">
         <title>Print Layout</title>
         </head>
-        <body style="font-size: small; column-count: 3; column-gap: 1.5rem;">        
+        <body style="font-size: small; column-count: 3; column-gap: 1.5rem;padding:1em;">        
             ${lines.join("\n")}
         </body>
         </html>`.trim();
