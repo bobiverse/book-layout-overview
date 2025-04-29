@@ -37,9 +37,60 @@
     }
 
     .singlepage {
-        color: #ccc;
+        color: #aaa;
+        overflow: hidden;
+    }
+    .singlepage[contenteditable]:empty:before {
+      content: attr(data-placeholder);
+      color: #ddd;
+      font-weight: normal;
+      font-size: 1rem;
+    }
+
+    #notes-container {
+        position: absolute; 
+        top:0; left:0; 
+        margin: 0.2em;
+        opacity: 0.7;
+    }
+    #notes-container:hover { opacity: 1 }
+    #notes-container > textarea {
+        min-width: 20em; height: 10em;
+        background-color: #ffffea;
+        padding: 0.3em 0.5em;
+        font-size: 0.9rem;
+        color: #444;
+        font-style: italic;
+
+    }
+    /* --- Context‑menu popup --- */
+    .context-popup {
+      position: fixed;           /* <<— key change: viewport‑relative */
+      background: #ffffff;
+      border: 1px solid #d1d5db;
+      padding: 0.5rem;
+      border-radius: 0.25rem;
+      box-shadow: 0 2px 6px rgba(0,0,0,.15);
+      z-index: 1000;
+    }
+    .context-popup input {        
+        outline: 0.2em solid #eee;
+        padding: 0.4em 0.7em;
+    }
+
+    .context-popup input:not(:placeholder-shown) {
+        outline-color: lightblue;
     }
     
+    .context-popup .tooltip-page-main-text {
+        font-style: italic;
+        background-color: #efefef77;
+        border-radius: 0.2em;
+        padding:0.5em;
+        color: #333;
+        margin:0 0 0.5rem 0;
+    }
+
     @media print {
         .hide-on-print {
             display: none;
@@ -355,6 +406,10 @@
         <summary class="mb-4">Applied styles</summary>
         <div id="stylesList" class="w-full max-w-md mb-4"></div>
     </details>
+    <details open id="notes-container">
+        <summary class="mb-2">✏ Notes</summary>
+        <textarea id="overallNotes" class="w-full border border-gray-300 rounded p-2" rows="6" placeholder="Your notes ..."></textarea>
+    </details>
 </div>
 
   <!-- Container for fluid pages -->
@@ -371,6 +426,8 @@
     const applyStyleBtn = document.getElementById('applyStyleBtn');
     const pagesContainer = document.getElementById('pagesContainer');
     const stylesList = document.getElementById('stylesList');
+    const overallNotesInput    = document.getElementById('overallNotes');
+
 
     // The references for the new layout dropdown
     const layoutToggleBtn = document.getElementById('layoutToggleBtn');
@@ -484,6 +541,8 @@
       if (savedTooltips) {
         pageTooltips = JSON.parse(savedTooltips);
       }
+      overallNotesInput.value = localStorage.getItem('overallNotes') || '';
+
     }
 
     // Save input changes to localStorage
@@ -529,10 +588,11 @@
         pageEl.style.width = pageWidth;
         pageEl.style.height = pageHeight;
         pageEl.dataset.pageNumber = i;
+        pageEl.setAttribute('data-placeholder', i);
         pageEl.contentEditable = true;
 
         // Load any saved text
-        pageEl.textContent = pageTexts[i] || i.toString();
+        pageEl.textContent = pageTexts[i] || '';
 
         // Set native tooltip if available (fallback)
         if (pageTooltips[i]) {
@@ -564,11 +624,7 @@
         });
 
         // Add right-click context menu for tooltip editing + delete.
-        pageEl.addEventListener('contextmenu', (e) => {
-          e.preventDefault();
-          showContextMenu(pageEl, i, e.clientX, e.clientY);
-        });
-
+        pageEl.addEventListener('contextmenu',e=>{ e.preventDefault(); showContextMenu(pageEl, i, e.clientX, e.clientY, e); });
         pagesContainer.appendChild(pageEl);
       }
 
@@ -709,78 +765,57 @@
     }
 
     // Right-click menu for tooltip & delete page
-    function showContextMenu(pageEl, pageNumber, x, y) {
-      // Remove existing popup if any
-      if (tooltipPopup) {
-        tooltipPopup.remove();
-      }
+    function showContextMenu(pageEl, pageNumber, x, y, ev){
+      if(tooltipPopup) tooltipPopup.remove();
 
-      tooltipPopup = document.createElement('div');
-      tooltipPopup.className = 'absolute bg-white border border-gray-300 p-2 rounded shadow-lg';
-      tooltipPopup.style.left = x + 'px';
-      tooltipPopup.style.top = y + 'px';
-      tooltipPopup.style.zIndex = 1000;
+    //   console.log("pageEl", pageEl.getBoundingClientRect());
+    //   console.log("x,y", x,y);
+    //   console.log("ev111", ev.clientX, ev.clientY);
+    //   console.log("ev222", ev.pageX, ev.pageY);
+    //   x=ev.pageX;
+    //   y=ev.pageY;
 
-      // Tooltip input
-      const input = document.createElement('input');
-      input.type = 'text';
-      input.placeholder = 'Enter tooltip text';
-      input.className = 'border border-gray-300 rounded p-1 mr-2 mb-2 w-full';
-      if (pageTooltips[pageNumber]) {
-        input.value = pageTooltips[pageNumber];
-      }
 
-      // Save tooltip button
-      const saveBtn = document.createElement('button');
-      saveBtn.textContent = 'Save Tooltip';
-      saveBtn.className = 'border border-gray-300 bg-white text-gray-700 px-2 py-1 rounded mr-2 mb-2 hover:bg-gray-100';
-      saveBtn.addEventListener('click', () => {
-        const tooltipText = input.value.trim();
-        pageTooltips[pageNumber] = tooltipText;
-        pageEl.title = tooltipText; // fallback
-        savePageTooltips();
-        closeContextMenu();
-        generatePages();
-      });
+      tooltipPopup=document.createElement('div');
+      tooltipPopup.className='context-popup border border-gray-300 p-2 rounded shadow-lg';
+    //   tooltipPopup.style.left=x+'px';
+    //   tooltipPopup.style.top =y+'px';
+      tooltipPopup.style.zIndex=1000;
 
-      // Delete page button
-      const deleteBtn = document.createElement('button');
-      deleteBtn.textContent = 'Delete Page';
-      deleteBtn.className = 'border border-gray-300 bg-white text-gray-700 px-2 py-1 rounded mr-2 mb-2 hover:bg-gray-100';
-      deleteBtn.addEventListener('click', () => {
-        deletePage(pageNumber);
-        closeContextMenu();
-      });
+      const h = document.createElement('h3');
+      h.className = 'fs-3 font-bold text-center p-1 mb-1 text-gray-500';
+      h.textContent = '🕮  Page: ' + pageNumber;
+      tooltipPopup.appendChild(h);
 
-      // Cancel button
-      const cancelBtn = document.createElement('button');
-      cancelBtn.textContent = 'Cancel';
-      cancelBtn.className = 'border border-gray-300 bg-white text-gray-700 px-2 py-1 rounded mb-2 hover:bg-gray-100';
-      cancelBtn.addEventListener('click', closeContextMenu);
+      const p = document.createElement('p');
+      p.className = 'fs-2 tooltip-page-main-text text-black text-center p-1 m-2';
+      p.textContent = pageTexts[pageNumber];
+      tooltipPopup.appendChild(p);
 
-      tooltipPopup.appendChild(input);
-      tooltipPopup.appendChild(saveBtn);
-      tooltipPopup.appendChild(deleteBtn);
-      tooltipPopup.appendChild(cancelBtn);
+
+      // ----- EDIT FIELD
+      const inp=document.createElement('input');
+      inp.type='text'; inp.placeholder='Enter tooltip text'; inp.className='border border-gray-300 rounded p-1 mr-2 mb-2 w-full';
+      inp.value=pageTooltips[pageNumber]||'';
+      inp.autofocus = true;
+
+
+      // ----- BUTTONS
+      const saveBtn   =makeBtn('Save Tooltip',  ()=>{ pageTooltips[pageNumber]=inp.value.trim(); savePageTooltips(); close(); generatePages(); });
+      const clearBtn  =makeBtn('Clear Tooltip', ()=>{ delete pageTooltips[pageNumber]; savePageTooltips(); close(); generatePages(); });
+      const delBtn    =makeBtn('Delete Page',   ()=>{ deletePage(pageNumber); close(); });
+      const cancelBtn =makeBtn('Cancel',        close);
+
+      [inp,saveBtn,clearBtn,delBtn,cancelBtn].forEach(n=>tooltipPopup.appendChild(n));
       document.body.appendChild(tooltipPopup);
+      inp.focus();
 
-      // Close if clicking outside
-      setTimeout(() => {
-        document.addEventListener('click', onClickOutside);
-      }, 0);
 
-      function onClickOutside(e) {
-        if (tooltipPopup && !tooltipPopup.contains(e.target)) {
-          closeContextMenu();
-        }
-      }
-      function closeContextMenu() {
-        if (tooltipPopup) {
-          tooltipPopup.remove();
-          tooltipPopup = null;
-          document.removeEventListener('click', onClickOutside);
-        }
-      }
+      // outside click
+      setTimeout(()=>document.addEventListener('click',onOutside));
+      function onOutside(e){ if(!tooltipPopup.contains(e.target)){ close(); } }
+      function close(){ if(tooltipPopup){ tooltipPopup.remove(); tooltipPopup=null; document.removeEventListener('click',onOutside);} }
+      function makeBtn(txt,fn){ const b=document.createElement('button'); b.textContent=txt; b.className='border border-gray-300 bg-white text-gray-700 px-2 py-1 rounded mr-2 mb-2 hover:bg-gray-100'; b.addEventListener('click',fn); return b; }
     }
 
     // Delete a page from the layout
@@ -1027,6 +1062,8 @@
       exportBtn.addEventListener('click', exportData);
       importFileBtn.addEventListener('click', () => fileInput.click());
       fileInput.addEventListener('change', onFileSelected);
+      overallNotesInput.addEventListener('input',()=> localStorage.setItem('overallNotes',overallNotesInput.value));
+
 
       // 5) Setup the reset actions
       totalResetBtn.addEventListener('click', () => {
